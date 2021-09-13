@@ -1,8 +1,8 @@
 ﻿using ConsoleTables;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 
 namespace ScalableRPS
 {
@@ -70,7 +70,7 @@ namespace ScalableRPS
             }
             public static int GetSafeRandomInt32(int lim1, int lim2)
             {
-                int random = RNGCryptoServiceProvider.GetInt32(lim1,lim2);
+                int random = RNGCryptoServiceProvider.GetInt32(lim1, lim2);
                 return random;
             }
         }
@@ -122,7 +122,7 @@ namespace ScalableRPS
             }
         }
 
-        
+
 
         static void Main(string[] args)
         {
