@@ -1,127 +1,161 @@
-﻿using System;
+﻿using ConsoleTables;
+using System;
 using System.Security.Cryptography;
-using ConsoleTables;
 using System.Text;
 
 namespace Task3
 {
     class Program
     {
-        public static class TableGenerator {
-            public static void GenereteTable(string[] moves)
+        public class HelpTable
+        {
+            public static void Show(string[] moves)
             {
-                Array.Resize(ref moves, moves.Length + 1);
-                moves[moves.GetUpperBound(0)] = "PC/USER";
-                var table = new ConsoleTable(moves);
+                string[] header = new string[moves.Length + 1];
+                for (int i = 0; i <= moves.Length; i++)
+                {
+                    if (i == 0)
+                    {
+                        header[i] = "PC/USER";
+                        continue;
+                    }
+                    header[i] = moves[i - 1];
+                }
+                var table = new ConsoleTable(header);
                 for (int i = 0; i < moves.Length; i++)
                 {
-                    table.AddRow(moves[i], "Draw", "Win", "Lose");
+                    string[] row = new string[moves.Length + 1];
+                    row[0] = moves[i];
+                    for (int j = 1; j <= moves.Length; j++)
+                    {
+                        row[j] = WinnerDeterminer.Determine(moves.Length, i, j - 1);
+                    }
+                    table.AddRow(row);
                 }
                 table.Write();
                 Console.WriteLine();
             }
         }
+        public class AvailableMovementsTable
+        {
+            public static void Show(string[] args, int arglen)
+            {
+                Console.WriteLine("Available moves:");
+                for (int i = 0; i < arglen; i++)
+                {
+                    Console.WriteLine($"{i + 1} - {args[i]}");
+                }
+                Console.WriteLine($"{arglen + 1}  -help");
+                Console.Write("Chose your action:");
+            }
+        }
         public class WinnerDeterminer
         {
-            public static bool Determine(int arglen, int player_move, int comp_move)
+            public static string Determine(int arglen, int player_move, int comp_move)
             {
                 int winnerflag = (arglen + player_move - comp_move) % arglen;
                 if (winnerflag == 0)
                 {
-                    Console.WriteLine("ничья\n");
+                    return "draw";
                 }
                 else
                 {
                     if (winnerflag % 2 == 1)
                     {
-                        Console.WriteLine("You win");
-                        return true;
+                        return "win";
                     }
                     else
                     {
-                        Console.WriteLine("You lose!");
-                        return true;
+                        return "lose";
                     }
                 }
-                return false;
             }
         }
         public class SafeRandom
         {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
-        }
-
-        public class RandomKey { 
-            public byte[] Generate() {
-                byte[] random = new Byte[32];
+            public static byte[] GetSafeRandomByte(int length)
+            {
+                byte[] random = new Byte[length];
                 RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
                 rng.GetBytes(random);
                 return random;
-                }
             }
+            public static int GetSafeRandomInt32(int lim1, int lim2)
+            {
+                int random = RNGCryptoServiceProvider.GetInt32(lim1,lim2);
+                return random;
+            }
+        }
+        public class RandomKey
+        {
+            public static byte[] Generate()
+            {
+                byte[] random = SafeRandom.GetSafeRandomByte(32);
+                return random;
+            }
+        }
         public class HMACGenerator
         {
-           public static byte[] Generete(byte[] key, string move)
+            public static byte[] Generate(byte[] key, string move)
             {
                 HMACSHA256 hmac = new HMACSHA256(key);
-                byte[] bytes_comp_move = Encoding.ASCII.GetBytes(move);
-                return hmac.ComputeHash(bytes_comp_move);
+                byte[] bytes_comp_move = Encoding.UTF8.GetBytes(move);
+                byte[] random = hmac.ComputeHash(bytes_comp_move);
+                return random;
+            }
+        }
+        public class HexToSringConverter
+        {
+            public static string Convert(byte[] hex)
+            {
+                string str = BitConverter.ToString(hex).Replace("-", "");
+                return str; 
             }
         }
 
-        
+
 
         static void Main(string[] args)
         {
             int arglen = args.Length;
-            Console.WriteLine(arglen);
             if (arglen < 3)
             {
                 Console.WriteLine("Слишком мало аргументов.Количество аргументов должно быть больше двух");
             }
-            else if(arglen % 2 != 1)
+            else if (arglen % 2 != 1)
             {
                 Console.WriteLine("Количество аргументов чётное.Необходимо ввести нечётное количество аргументов.");
             }
             else
             {
-                RandomKey rnd = new RandomKey();
-                var key = rnd.Generate();
-                var strkey = BitConverter.ToString(key).Replace("-", "");
-
                 string[] moves = args;
-                bool final = false;
-                while (!final)
+                int comp_move = SafeRandom.GetSafeRandomInt32(1, args.Length + 1);
+                var key = RandomKey.Generate();
+                var strkey = HexToSringConverter.Convert(key);
+                var strhashValue = HexToSringConverter.Convert(HMACGenerator.Generate(key, args[comp_move - 1]));
+                Console.WriteLine($"HMAC: {strhashValue}");
+                bool correct = false;
+                while (!correct)
                 {
-                    Console.WriteLine("HMAC " + strkey);
-                    Console.WriteLine("Available moves:");
-                    for (int i = 0; i < arglen; i++)
+                    AvailableMovementsTable.Show(args, arglen);
+                    int player_move = Convert.ToInt32(Console.ReadLine());
+                    if (player_move < 0 || player_move > arglen+1)
                     {
-                        Console.WriteLine($"{i + 1} - {args[i]}");
+                        continue;
                     }
-                    Console.WriteLine($"{arglen + 1}  -help");
-                    Console.Write("Chose your action:");
-                    int player_move = 4;
-                    bool start_game = false;
-
-                    while (!start_game) {
-                        int player_input = Convert.ToInt32(Console.ReadLine());
-                        if (player_input == args.Length + 1)
-                        {
-                            TableGenerator.GenereteTable(args);
-                        }
-                        else
-                        {
-                            start_game = true;
-                            player_move = player_input;
-                        }
+                    else if (player_move == arglen + 1)
+                    {
+                        HelpTable.Show(args);
                     }
-                    Console.WriteLine($"Your move: {args[player_move-1]}");
-                    int comp_move = RNGCryptoServiceProvider.GetInt32(1, args.Length+1);
-                    Console.WriteLine($"Computer move: {args[comp_move-1]}");
-                    var strhashValue = BitConverter.ToString(HMACGenerator.Generete(key, args[comp_move - 1])).Replace("-", "");
-                    Console.WriteLine($"HMAC: {strhashValue}");
-                    final = WinnerDeterminer.Determine(arglen, player_move, comp_move);
+                    else
+                    {
+                        correct = true;
+                        string result = WinnerDeterminer.Determine(arglen, player_move, comp_move);
+                        Console.WriteLine($"Your move: {args[player_move - 1]}");
+                        Console.WriteLine($"Computer move: {args[comp_move - 1]}");
+                        Console.WriteLine("You " + result);
+                        Console.WriteLine("HMAC key: " + strkey);
+                    }
                 }
             }
             Console.ReadKey();
