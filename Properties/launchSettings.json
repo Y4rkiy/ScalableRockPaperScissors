@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Task3": {
+      "commandName": "Project",
+      "commandLineArgs": "камень бумага ножницы"
+    }
+  }
+}
