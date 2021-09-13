@@ -8,45 +8,6 @@ namespace ScalableRPS
 {
     class Program
     {
-        public class ArgsChecker
-        {
-            public static bool Check(string[] args, int arglen)
-            {
-                string error_message="";
-                bool input_error=false;
-                if (arglen == 0)
-                {
-                    error_message = "There are no arguments. The number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
-                    input_error = true;
-                }
-                if (arglen < 3)
-                {
-                    error_message= "Too few arguments.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated..";
-                    input_error = true;
-                }
-                if (arglen % 2 != 1)
-                {
-                    error_message = "the number of arguments is even.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
-                    input_error = true;
-                }
-                if (!(args.Distinct().Count() == arglen))
-                {
-                    error_message = "The arguments passed are repeated.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
-                    input_error  = true;
-                }
-                if (input_error)
-                {
-                    GetErrorMessage(error_message);
-                    return !input_error;
-                }
-                return !input_error;
-                
-            }
-            public static void GetErrorMessage(string text)
-            {
-                Console.WriteLine("Input Error:\n"+text + "\nExample: >/.../dir/program.exe rock paper scissors lizard spock");
-            }
-        }
         public class HelpTable
         {
             public static void Show(string[] moves)
@@ -76,39 +37,18 @@ namespace ScalableRPS
                 Console.WriteLine();
             }
         }
-        public class AvailableMovementsTable
-        {
-            public static void Show(string[] args, int arglen)
-            {
-                Console.WriteLine("Available moves:");
-                for (int i = 0; i < arglen; i++)
-                {
-                    Console.WriteLine($"{i + 1} - {args[i]}");
-                }
-                Console.WriteLine($"{arglen + 1}  -help");
-                Console.Write("Chose your action:");
-            }
-        }
-        public class ResultTable
-        {
-            public static void Show(int arglen, int player_move, int comp_move, string[] args, string strkey)
-            {
-                string result = WinnerDeterminer.Determine(arglen, player_move, comp_move);
-                Console.WriteLine($"Your move: {args[player_move - 1]}\nComputer move: {args[comp_move - 1]}\nYou  {result}\nHMAC key: {strkey}");
-            }
-        }
         public class WinnerDeterminer
         {
-            public static string Determine(int arglen, int player_move, int comp_move)
+            public static string Determine(int argsLength, int playerMove, int computerMove)
             {
-                int winnerflag = (arglen + player_move - comp_move) % arglen;
-                if (winnerflag == 0)
+                int winnerFlag = (argsLength + playerMove - computerMove) % argsLength;
+                if (winnerFlag == 0)
                 {
                     return "draw";
                 }
                 else
                 {
-                    if (winnerflag % 2 == 1)
+                    if (winnerFlag % 2 == 1)
                     {
                         return "win";
                     }
@@ -142,59 +82,107 @@ namespace ScalableRPS
                 return random;
             }
         }
-        public class HMACGenerator
+        public class ArgsChecker
         {
-            public static byte[] Generate(byte[] key, string move)
+            public static bool Check(string[] args, int argsLength)
             {
-                HMACSHA256 hmac = new HMACSHA256(key);
-                byte[] bytes_comp_move = Encoding.Default.GetBytes(move);
-                byte[] random = hmac.ComputeHash(bytes_comp_move);
-                return random;
+                string error_message = "";
+                bool input_error = false;
+                if (argsLength == 0)
+                {
+                    error_message = "There are no arguments. The number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
+                    input_error = true;
+                }
+                if (argsLength < 3)
+                {
+                    error_message = "Too few arguments.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated..";
+                    input_error = true;
+                }
+                if (argsLength % 2 != 1)
+                {
+                    error_message = "the number of arguments is even.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
+                    input_error = true;
+                }
+                if (!(args.Distinct().Count() == argsLength))
+                {
+                    error_message = "The arguments passed are repeated.\nThe number of arguments must be greater than or equal to 3 and must be odd. Arguments must not be repeated.";
+                    input_error = true;
+                }
+                if (input_error)
+                {
+                    GetErrorMessage(error_message);
+                    return !input_error;
+                }
+                return !input_error;
+
             }
-            
-        }
-        public class HexToSringConverter
-        {
-            public static string Convert(byte[] hex)
+            public static void GetErrorMessage(string text)
             {
-                string str = BitConverter.ToString(hex).Replace("-", "");
-                return str; 
+                Console.WriteLine("Input Error:\n" + text + "\nExample: >/.../dir/ScalableRPS.exe rock paper scissors lizard spock");
             }
         }
 
-
+        
 
         static void Main(string[] args)
         {
-            int arglen = args.Length;
-            if (ArgsChecker.Check(args, arglen))
+            int ArgsLength = args.Length;
+            if (ArgsChecker.Check(args, ArgsLength))
             {
-                int comp_move = SafeRandom.GetSafeRandomInt32(1, arglen + 1);
+                int ComputerMove = SafeRandom.GetSafeRandomInt32(1, ArgsLength + 1);
                 var key = RandomKey.Generate();
-                var strkey = HexToSringConverter.Convert(key);
-                var strhashValue = HexToSringConverter.Convert(HMACGenerator.Generate(key, args[comp_move - 1]));
-                Console.WriteLine($"HMAC: {strhashValue}");
+                var StringKey = HexToSringConvert(key);
+                var StringHash = HexToSringConvert(HMACGenerate(key, args[ComputerMove - 1]));
+                Console.WriteLine($"HMAC: {StringHash}");
                 bool correct = false;
                 while (!correct)
                 {
-                    AvailableMovementsTable.Show(args, arglen);
-                    int player_move = Convert.ToInt32(Console.ReadLine());
-                    if (player_move < 0 || player_move > arglen + 1)
+                    ShowAvailableMovements(args, ArgsLength);
+                    int PlayerMove = Convert.ToInt32(Console.ReadLine());
+                    if (PlayerMove < 0 || PlayerMove > ArgsLength + 1)
                     {
                         continue;
                     }
-                    else if (player_move == arglen + 1)
+                    else if (PlayerMove == ArgsLength + 1)
                     {
                         HelpTable.Show(args);
                     }
                     else
                     {
                         correct = true;
-                        ResultTable.Show(arglen, player_move, comp_move, args, strkey);
+                        ShowResult(ArgsLength, PlayerMove, ComputerMove, args, StringKey);
                     }
                 }
             }
             Console.ReadKey();
+        }
+
+        public static void ShowAvailableMovements(string[] args, int arglen)
+        {
+            Console.WriteLine("Available moves:");
+            for (int i = 0; i < arglen; i++)
+            {
+                Console.WriteLine($"{i + 1} - {args[i]}");
+            }
+            Console.WriteLine($"{arglen + 1}  -help");
+            Console.Write("Chose your action:");
+        }
+        public static byte[] HMACGenerate(byte[] key, string move)
+        {
+            HMACSHA256 hmac = new HMACSHA256(key);
+            byte[] bytesComputerMove = Encoding.Default.GetBytes(move);
+            byte[] random = hmac.ComputeHash(bytesComputerMove);
+            return random;
+        }
+        public static string HexToSringConvert(byte[] hex)
+        {
+            string stringHex = BitConverter.ToString(hex).Replace("-", "");
+            return stringHex;
+        }
+        public static void ShowResult(int argsLength, int playerMove, int computerMove, string[] args, string stringKey)
+        {
+            string result = WinnerDeterminer.Determine(argsLength, playerMove, computerMove);
+            Console.WriteLine($"Your move: {args[playerMove - 1]}\nComputer move: {args[computerMove - 1]}\nYou  {result}\nHMAC key: {stringKey}");
         }
     }
 }
