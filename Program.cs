@@ -118,7 +118,7 @@ namespace ScalableRPS
             }
             public static void GetErrorMessage(string text)
             {
-                Console.WriteLine("Input Error:\n" + text + "\nExample: >/.../dir/ScalableRPS.exe rock paper scissors lizard spock");
+                Console.WriteLine("Input Error:\n" + text + "\nExample: \\dir\\ScalableRPS.exe rock paper scissors lizard spock");
             }
         }
 
